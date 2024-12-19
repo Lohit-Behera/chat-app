@@ -8,7 +8,6 @@ import { fetchUserDetails } from "./features/userSlice";
 function Layout() {
   const dispatch = useDispatch<AppDispatch>();
   const userInfo = useSelector((state: RootState) => state.user.userInfo);
-  console.log(userInfo);
 
   const userDetailsStatus = useSelector(
     (state: RootState) => state.user.userDetailsStatus

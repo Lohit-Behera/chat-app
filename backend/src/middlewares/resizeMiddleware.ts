@@ -44,13 +44,13 @@ export const resizeImage = async (
               .toBuffer();
 
             file.buffer = resizedImageBuffer;
-            file.filename = `resized-${Date.now()}-${originalName}`;
+            file.filename = `resized-${originalName}`;
           } else {
             const imagePath = file.path;
             const outputFilePath = path.join(
               rootPath,
               "./public/images",
-              `resized-${Date.now()}-${file.filename}`
+              `resized-${file.filename}`
             );
 
             await sharp(imagePath)
@@ -61,7 +61,7 @@ export const resizeImage = async (
 
             fs.unlinkSync(imagePath);
             file.path = outputFilePath;
-            file.filename = `resized-${Date.now()}-${file.filename}`;
+            file.filename = `resized-${file.filename}`;
           }
         }
       }

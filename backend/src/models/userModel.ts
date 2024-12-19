@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 
 export interface IUser extends Document {
   _id: string;
+  username: string;
   email: string;
   fullName: string;
   password: string;
@@ -19,6 +20,11 @@ export interface IUser extends Document {
 
 const userSchema = new Schema(
   {
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+    },
     email: {
       type: String,
       required: true,

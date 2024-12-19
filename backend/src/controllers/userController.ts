@@ -64,6 +64,7 @@ const userRegister = asyncHandler(async (req, res) => {
 
   // create a user
   const user = await User.create({
+    username,
     fullName,
     email,
     password,
@@ -169,4 +170,14 @@ const userDetails = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "User found successfully."));
 });
 
-export { userRegister, userLogin, userLogout, userDetails };
+const getAllUsers = asyncHandler(async (req, res) => {
+  const users = await User.find().select("fullName username avatar");
+  if (!users) {
+    return res.status(404).json(new ApiResponse(404, null, "Users not found."));
+  }
+  return res
+    .status(200)
+    .json(new ApiResponse(200, users, "Users found successfully."));
+});
+
+export { userRegister, userLogin, userLogout, userDetails, getAllUsers };

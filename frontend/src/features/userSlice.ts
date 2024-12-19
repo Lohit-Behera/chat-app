@@ -3,6 +3,13 @@ import axios from "axios";
 import { baseUrl } from "@/lib/proxy";
 import { getCookie } from "@/lib/getCookie";
 
+type AllUser = {
+  _id: string;
+  fullName: string;
+  username: string;
+  avatar: string;
+};
+
 export const fetchRegister = createAsyncThunk(
   "auth/register",
   async (
@@ -120,6 +127,28 @@ export const fetchUserDetails = createAsyncThunk(
   }
 );
 
+export const fetchGetAllUser = createAsyncThunk(
+  "user/getAllUser",
+  async (_, { rejectWithValue }) => {
+    try {
+      const config = {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      };
+      const { data } = await axios.get(`${baseUrl}/api/v1/users/all`, config);
+      return data;
+    } catch (error: any) {
+      const errorMessage =
+        error.response && error.response.data
+          ? error.response.data.message
+          : error.message;
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 const userInfoCookie = getCookie("userInfoChat");
 
 export const userSlice = createSlice({
@@ -140,6 +169,10 @@ export const userSlice = createSlice({
     userDetails: { data: {} },
     userDetailsStatus: "idle",
     userDetailsError: {},
+
+    getAllUser: { data: [] as AllUser[] },
+    getAllUserStatus: "idle",
+    getAllUserError: {},
   },
   reducers: {},
   extraReducers: (builder) => {
@@ -194,6 +227,19 @@ export const userSlice = createSlice({
       .addCase(fetchUserDetails.rejected, (state, action) => {
         state.userDetailsStatus = "failed";
         state.userDetailsError = action.payload || "User Details failed";
+      })
+
+      // Get All Users
+      .addCase(fetchGetAllUser.pending, (state) => {
+        state.getAllUserStatus = "loading";
+      })
+      .addCase(fetchGetAllUser.fulfilled, (state, action) => {
+        state.getAllUserStatus = "succeeded";
+        state.getAllUser = action.payload;
+      })
+      .addCase(fetchGetAllUser.rejected, (state, action) => {
+        state.getAllUserStatus = "failed";
+        state.getAllUserError = action.payload || "User Details failed";
       });
   },
 });

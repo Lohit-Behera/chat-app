@@ -14,7 +14,9 @@ app.use(cookieParser());
 
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
-app.use("/api/v1", express.static("public"));
+
+// Serve static files from the "public" directory
+app.use("/static", express.static("public"));
 
 // import routes
 import userRouter from "./routes/user.routes";

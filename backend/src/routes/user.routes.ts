@@ -6,6 +6,7 @@ import {
   userDetails,
   userLogin,
   userLogout,
+  getAllUsers,
 } from "../controllers/userController";
 import { authMiddleware } from "../middlewares/authMiddleware";
 
@@ -24,5 +25,6 @@ userRouter.post("/login", userLogin);
 // Protected routes
 userRouter.get("/details", authMiddleware, userDetails);
 userRouter.get("/logout", authMiddleware, userLogout);
+userRouter.get("/all", authMiddleware, getAllUsers);
 
 export default userRouter;
