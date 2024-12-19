@@ -3,6 +3,18 @@ import axios from "axios";
 import { baseUrl } from "@/lib/proxy";
 import { getCookie } from "@/lib/getCookie";
 
+type UserDetails = {
+  _id: string;
+  fullName: string;
+  username: string;
+  email: string;
+  avatar: string;
+  status: boolean;
+  lastActive: Date;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 type AllUser = {
   _id: string;
   fullName: string;
@@ -166,7 +178,7 @@ export const userSlice = createSlice({
     logoutStatus: "idle",
     logoutError: {},
 
-    userDetails: { data: {} },
+    userDetails: { data: {} as UserDetails },
     userDetailsStatus: "idle",
     userDetailsError: {},
 
