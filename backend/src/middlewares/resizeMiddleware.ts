@@ -4,6 +4,7 @@ import fs from "fs";
 import { ApiResponse } from "../utils/ApiResponse";
 import { Request, Response, NextFunction } from "express";
 
+const rootPath = path.resolve();
 sharp.cache(false);
 
 export const resizeImage = async (
@@ -45,10 +46,10 @@ export const resizeImage = async (
             file.buffer = resizedImageBuffer;
             file.filename = `resized-${Date.now()}-${originalName}`;
           } else {
-            const imagePath = path.join(__dirname, file.path);
+            const imagePath = file.path;
             const outputFilePath = path.join(
-              __dirname,
-              "./public/temp",
+              rootPath,
+              "./public/images",
               `resized-${Date.now()}-${file.filename}`
             );
 
