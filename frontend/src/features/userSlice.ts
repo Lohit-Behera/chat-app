@@ -17,9 +17,9 @@ type UserDetails = {
 
 type AllUser = {
   _id: string;
-  fullName: string;
   username: string;
   avatar: string;
+  status: boolean;
 };
 
 export const fetchRegister = createAsyncThunk(

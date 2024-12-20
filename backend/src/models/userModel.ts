@@ -43,7 +43,7 @@ const userSchema = new Schema(
     },
     status: {
       type: Boolean,
-      default: true,
+      default: false,
     },
     lastActive: {
       type: Date,

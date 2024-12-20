@@ -171,7 +171,10 @@ const userDetails = asyncHandler(async (req, res) => {
 });
 
 const getAllUsers = asyncHandler(async (req, res) => {
-  const users = await User.find().select("fullName username avatar");
+  const currentUserId = req.user?._id;
+  const users = await User.find({ _id: { $ne: currentUserId } }).select(
+    "_id username avatar status"
+  );
   if (!users) {
     return res.status(404).json(new ApiResponse(404, null, "Users not found."));
   }
