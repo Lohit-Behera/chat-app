@@ -173,7 +173,7 @@ const userDetails = asyncHandler(async (req, res) => {
 const getAllUsers = asyncHandler(async (req, res) => {
   const currentUserId = req.user?._id;
   const users = await User.find({ _id: { $ne: currentUserId } }).select(
-    "_id username avatar status"
+    "_id username avatar online"
   );
   if (!users) {
     return res.status(404).json(new ApiResponse(404, null, "Users not found."));
@@ -183,4 +183,24 @@ const getAllUsers = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, users, "Users found successfully."));
 });
 
-export { userRegister, userLogin, userLogout, userDetails, getAllUsers };
+const receiverDetails = asyncHandler(async (req, res) => {
+  const { receiverId } = req.params;
+  const user = await User.findById(receiverId).select(
+    "-password -refreshToken -__v"
+  );
+  if (!user) {
+    return res.status(404).json(new ApiResponse(404, null, "User not found."));
+  }
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "User found successfully."));
+});
+
+export {
+  userRegister,
+  userLogin,
+  userLogout,
+  userDetails,
+  getAllUsers,
+  receiverDetails,
+};

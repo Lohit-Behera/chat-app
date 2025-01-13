@@ -41,7 +41,7 @@ const userSchema = new Schema(
       type: String,
       required: true,
     },
-    status: {
+    online: {
       type: Boolean,
       default: false,
     },

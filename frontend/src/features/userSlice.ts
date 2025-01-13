@@ -9,7 +9,7 @@ type UserDetails = {
   username: string;
   email: string;
   avatar: string;
-  status: boolean;
+  online: boolean;
   lastActive: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -19,7 +19,7 @@ type AllUser = {
   _id: string;
   username: string;
   avatar: string;
-  status: boolean;
+  online: boolean;
 };
 
 export const fetchRegister = createAsyncThunk(
@@ -161,6 +161,31 @@ export const fetchGetAllUser = createAsyncThunk(
   }
 );
 
+export const fetchReceiverDetails = createAsyncThunk(
+  "user/receiverDetails",
+  async (receiverId: string, { rejectWithValue }) => {
+    try {
+      const config = {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      };
+      const { data } = await axios.get(
+        `${baseUrl}/api/v1/users/receiver/${receiverId}`,
+        config
+      );
+      return data;
+    } catch (error: any) {
+      const errorMessage =
+        error.response && error.response.data
+          ? error.response.data.message
+          : error.message;
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 const userInfoCookie = getCookie("userInfoChat");
 
 export const userSlice = createSlice({
@@ -185,6 +210,10 @@ export const userSlice = createSlice({
     getAllUser: { data: [] as AllUser[] },
     getAllUserStatus: "idle",
     getAllUserError: {},
+
+    receiverDetails: { data: {} as UserDetails },
+    receiverDetailsStatus: "idle",
+    receiverDetailsError: {},
   },
   reducers: {},
   extraReducers: (builder) => {
@@ -252,6 +281,20 @@ export const userSlice = createSlice({
       .addCase(fetchGetAllUser.rejected, (state, action) => {
         state.getAllUserStatus = "failed";
         state.getAllUserError = action.payload || "User Details failed";
+      })
+
+      // Receiver Details
+      .addCase(fetchReceiverDetails.pending, (state) => {
+        state.receiverDetailsStatus = "loading";
+      })
+      .addCase(fetchReceiverDetails.fulfilled, (state, action) => {
+        state.receiverDetailsStatus = "succeeded";
+        state.receiverDetails = action.payload;
+      })
+      .addCase(fetchReceiverDetails.rejected, (state, action) => {
+        state.receiverDetailsStatus = "failed";
+        state.receiverDetailsError =
+          action.payload || "Receiver Details failed";
       });
   },
 });

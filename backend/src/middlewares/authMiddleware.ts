@@ -54,7 +54,6 @@ export const authMiddleware = asyncHandler(
           process.env.REFRESH_TOKEN_SECRET!
         ) as JwtPayload;
         const user = await User.findById(decoded.id);
-
         // If user not found
         if (!user) {
           return res

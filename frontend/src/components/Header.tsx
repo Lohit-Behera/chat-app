@@ -20,6 +20,7 @@ function Header() {
             <Button
               onClick={() => dispatch(fetchLogout())}
               variant={"destructive"}
+              size="sm"
             >
               Logout
             </Button>

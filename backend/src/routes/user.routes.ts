@@ -7,6 +7,7 @@ import {
   userLogin,
   userLogout,
   getAllUsers,
+  receiverDetails,
 } from "../controllers/userController";
 import { authMiddleware } from "../middlewares/authMiddleware";
 
@@ -26,5 +27,6 @@ userRouter.post("/login", userLogin);
 userRouter.get("/details", authMiddleware, userDetails);
 userRouter.get("/logout", authMiddleware, userLogout);
 userRouter.get("/all", authMiddleware, getAllUsers);
+userRouter.get("/receiver/:receiverId", authMiddleware, receiverDetails);
 
 export default userRouter;

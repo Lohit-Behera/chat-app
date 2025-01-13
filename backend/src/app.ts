@@ -20,8 +20,10 @@ app.use("/static", express.static("public"));
 
 // import routes
 import userRouter from "./routes/user.routes";
+import messageRouter from "./routes/message.routes";
 
 // Routes
 app.use("/api/v1/users", userRouter);
+app.use("/api/v1/messages", messageRouter);
 
 export { app };
