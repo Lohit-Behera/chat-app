@@ -5,13 +5,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { Send } from "lucide-react";
+import { Send, Phone, Video } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Socket } from "socket.io-client";
 import { fetchReceiverDetails } from "@/features/userSlice";
 import { fetchGetMessages } from "@/features/messageSlice";
 import { debounce } from "@/lib/debounce";
 import MessageLoading from "./message-loading";
+import Call from "./Call";
+import CallNotification from "./CallNotification";
+import CallingDialog from "./CallingDialog";
+import { toast } from "sonner";
 
 interface ChatProps {
   socket: Socket;
@@ -24,6 +28,11 @@ function Chat({ socket, receiverId }: ChatProps) {
   const [message, setMessage] = useState("");
   const [allMessage, setAllMessage] = useState<any[]>([]);
   const [typingUser, setTypingUser] = useState<string | null>(null);
+  const [isInCall, setIsInCall] = useState(false);
+  const [incomingCall, setIncomingCall] = useState<any>(null);
+  const [isCalling, setIsCalling] = useState(false);
+  const [callType, setCallType] = useState<"audio" | "video" | null>(null);
+  const [isCallInitiator, setIsCallInitiator] = useState(false);
 
   const userDetails = useSelector(
     (state: RootState) => state.user.userDetails.data
@@ -142,6 +151,111 @@ function Chat({ socket, receiverId }: ChatProps) {
     };
   }, [socket, userDetails._id, typingUser]);
 
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("incoming-call", (data) => {
+      console.log("Received incoming call:", data);
+      setIncomingCall({
+        id: data.callerId,
+        username: data.callerName,
+        avatar: data.callerAvatar,
+        isVideo: data.isVideo,
+      });
+    });
+
+    socket.on("call-failed", (data) => {
+      console.log("Call failed:", data);
+      // Show an error message to the user
+      // You can use your preferred toast/notification system
+      toast.info(`Unable to reach user. They may be offline.`);
+    });
+
+    socket.on("call-rejected", () => {
+      // Handle call rejection
+      console.log("Call was rejected");
+    });
+
+    socket.on("call-accepted", () => {
+      setIsInCall(true);
+    });
+
+    socket.on("call-ended", () => {
+      setIsInCall(false);
+    });
+
+    return () => {
+      socket.off("incoming-call");
+      socket.off("call-failed");
+      socket.off("call-rejected");
+      socket.off("call-accepted");
+      socket.off("call-ended");
+    };
+  }, [socket]);
+
+  // Add these handler functions
+  const handleStartCall = (isVideo: boolean) => {
+    if (!receiverDetails.online) {
+      toast.error("User is offline");
+      return;
+    }
+
+    setIsCalling(true);
+    setIsCallInitiator(true);
+
+    socket.emit("start-call", {
+      receiverId,
+      callerName: userDetails.username,
+      callerAvatar: userDetails.avatar,
+      isVideo,
+    });
+  };
+
+  const handleAcceptCall = () => {
+    setIsInCall(true);
+    setIsCallInitiator(false);
+    socket.emit("accept-call", { callerId: incomingCall.id });
+    setIncomingCall(null);
+  };
+
+  const handleRejectCall = () => {
+    socket.emit("reject-call", { callerId: incomingCall.id });
+    setIncomingCall(null);
+  };
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("call-accepted", () => {
+      setIsCalling(false);
+      setIsInCall(true);
+    });
+
+    socket.on("call-rejected", () => {
+      setIsCalling(false);
+      setIsCallInitiator(false);
+      toast.error("Call was rejected");
+    });
+
+    socket.on("call-failed", () => {
+      setIsCalling(false);
+      setIsCallInitiator(false);
+      toast.error("Call failed to connect");
+    });
+
+    socket.on("call-ended", () => {
+      setIsInCall(false);
+      setIsCallInitiator(false);
+    });
+
+    return () => {
+      socket.off("call-accepted");
+      socket.off("call-rejected");
+      socket.off("call-failed");
+      socket.off("call-ended");
+    };
+  }, [socket]);
+
   return (
     <div className="flex flex-col">
       {receiverId ? (
@@ -164,10 +278,61 @@ function Chat({ socket, receiverId }: ChatProps) {
                 {receiverDetails.online ? "Online" : "Offline"}
               </p>
             </div>
+            {/* Call Controls */}
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleStartCall(false)}
+                disabled={!receiverDetails.online}
+              >
+                <Phone className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleStartCall(true)}
+                disabled={!receiverDetails.online}
+              >
+                <Video className="h-4 w-4" />
+              </Button>
+            </div>
           </header>
           <div className="relative flex flex-col space-y-2">
+            {isInCall && (
+              <Call
+                socket={socket}
+                receiverId={receiverId}
+                userId={userDetails._id}
+                isInitiator={isCallInitiator}
+                onEndCall={() => {
+                  setIsInCall(false);
+                  setIsCallInitiator(false);
+                }}
+              />
+            )}
+
+            {incomingCall && (
+              <CallNotification
+                socket={socket}
+                caller={incomingCall}
+                onAccept={handleAcceptCall}
+                onReject={handleRejectCall}
+              />
+            )}
+            {isCalling && (
+              <CallingDialog
+                receiver={receiverDetails}
+                onCancel={() => {
+                  socket.emit("cancel-call", { receiverId });
+                  setIsCalling(false);
+                  setIsCallInitiator(false);
+                }}
+                isVideo={true}
+              />
+            )}
             <ScrollArea className="h-[70vh]" ref={messagesContainerRef}>
-              <div className="w-[98%] h-full flex flex-col space-y-2">
+              <div className="w-[98%] h-full flex flex-col space-y-2 mb-2">
                 <AnimatePresence>
                   {allMessage.map((item, index) => (
                     <motion.div

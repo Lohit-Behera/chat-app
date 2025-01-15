@@ -21,12 +21,17 @@ const io = new SocketIOServer(server, {
   },
 });
 
+const userSocketMap = new Map();
+
 // Socket.IO connection handling
 io.on("connection", async (socket) => {
-  console.log(`User connected: ${socket.id}`);
-  console.log(socket.handshake.query.userId);
+  const userId = socket.handshake.query.userId as string;
+  console.log(`User connected: ${socket.id} - ${userId}`);
   // update user online status
-  await User.findByIdAndUpdate(socket.handshake.query.userId, { online: true });
+  await User.findByIdAndUpdate(userId, { online: true });
+
+  // Store the socket ID for this user
+  userSocketMap.set(userId, socket.id);
 
   // send ping to client for fetch data when user is online
   io.emit("status_update", { userId: socket.handshake.query.userId });
@@ -66,6 +71,90 @@ io.on("connection", async (socket) => {
     socket.to(roomId).emit("stopped_typing", userId);
   });
 
+  socket.on("start-call", (data) => {
+    const { receiverId, callerName, callerAvatar, isVideo } = data;
+    const receiverSocketId = userSocketMap.get(receiverId);
+
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("incoming-call", {
+        callerId: socket.handshake.query.userId,
+        callerName,
+        callerAvatar,
+        isVideo,
+      });
+    } else {
+      socket.emit("call-failed", {
+        error: "User is not online",
+        receiverId,
+      });
+    }
+  });
+
+  socket.on("cancel-call", (data) => {
+    const { receiverId } = data;
+    const receiverSocketId = userSocketMap.get(receiverId);
+
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("call-cancelled", {
+        callerId: socket.handshake.query.userId,
+      });
+    }
+  });
+
+  socket.on("accept-call", (data) => {
+    const { callerId } = data;
+    const callerSocketId = userSocketMap.get(callerId);
+
+    if (callerSocketId) {
+      io.to(callerSocketId).emit("call-accepted");
+    }
+  });
+
+  socket.on("reject-call", (data) => {
+    const { callerId } = data;
+    io.to(callerId).emit("call-rejected");
+  });
+
+  socket.on("end-call", (data) => {
+    const { receiverId } = data;
+    const receiverSocketId = userSocketMap.get(receiverId);
+
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("call-ended");
+    }
+  });
+
+  // WebRTC signaling
+  socket.on("offer", (data) => {
+    const { offer, receiverId } = data;
+    const receiverSocketId = userSocketMap.get(receiverId);
+
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("offer", {
+        offer,
+        callerId: socket.handshake.query.userId,
+      });
+    }
+  });
+
+  socket.on("answer", (data) => {
+    const { answer, receiverId } = data;
+    const receiverSocketId = userSocketMap.get(receiverId);
+
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("answer", { answer });
+    }
+  });
+
+  socket.on("ice-candidate", (data) => {
+    const { candidate, receiverId } = data;
+    const receiverSocketId = userSocketMap.get(receiverId);
+
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("ice-candidate", { candidate });
+    }
+  });
+
   // Handle user disconnection
   socket.on("disconnect", async () => {
     console.log(`User disconnected: ${socket.id}`);
@@ -75,6 +164,7 @@ io.on("connection", async (socket) => {
       lastActive: new Date(),
     });
     io.emit("status_update", { userId: socket.handshake.query.userId });
+    userSocketMap.delete(userId);
   });
 });
 

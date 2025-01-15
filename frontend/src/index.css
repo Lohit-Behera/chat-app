@@ -85,3 +85,11 @@
   -webkit-box-shadow: 0 0 0px 1000px #192230 inset;
   transition: background-color 5000s ease-in-out 0s;
 }
+
+
+/* In your global CSS */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform-origin: center;
+}
