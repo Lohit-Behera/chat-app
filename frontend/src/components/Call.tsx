@@ -88,9 +88,17 @@ const Call = ({
     initializeCall();
 
     return () => {
-      // Cleanup
+      // Stop local media tracks
       localStream?.getTracks().forEach((track) => track.stop());
+
+      // Close peer connection
       peerConnectionRef.current?.close();
+      peerConnectionRef.current = null;
+
+      // Remove socket listeners
+      socket.off("offer");
+      socket.off("answer");
+      socket.off("ice-candidate");
     };
   }, [isInitiator]);
 
@@ -140,6 +148,36 @@ const Call = ({
     };
   }, [socket]);
 
+  useEffect(() => {
+    const handleCallEnded = () => {
+      console.log("Call ended");
+
+      // Stop local media tracks
+      if (localStream) {
+        localStream.getTracks().forEach((track) => track.stop());
+        setLocalStream(null); // Clear the local stream state
+      }
+
+      // Close peer connection
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close();
+        peerConnectionRef.current = null;
+      }
+
+      // Optional: Clear the remote stream
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = null;
+        setRemoteStream(null);
+      }
+    };
+
+    socket.on("call-ended", handleCallEnded);
+
+    return () => {
+      socket.off("call-ended", handleCallEnded);
+    };
+  }, [socket, localStream]);
+
   const toggleAudio = () => {
     if (localStream) {
       const audioTrack = localStream.getAudioTracks()[0];
@@ -159,7 +197,7 @@ const Call = ({
   const handleEndCall = () => {
     localStream?.getTracks().forEach((track) => track.stop());
     peerConnectionRef.current?.close();
-    socket.emit("end-call", { receiverId });
+    socket.emit("end-call", { receiverId, userId });
     onEndCall();
   };
 
@@ -172,7 +210,7 @@ const Call = ({
             ref={remoteVideoRef}
             autoPlay
             playsInline
-            className="w-full h-full object-cover"
+            className="w-full max-h-[60vh] object-cover"
           />
         </div>
 

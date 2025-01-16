@@ -115,11 +115,13 @@ io.on("connection", async (socket) => {
   });
 
   socket.on("end-call", (data) => {
-    const { receiverId } = data;
+    const { receiverId, userId } = data;
     const receiverSocketId = userSocketMap.get(receiverId);
+    const callerSocketId = userSocketMap.get(userId);
 
-    if (receiverSocketId) {
+    if (receiverSocketId && callerSocketId) {
       io.to(receiverSocketId).emit("call-ended");
+      io.to(callerSocketId).emit("call-ended");
     }
     console.log("call ended", data);
   });
