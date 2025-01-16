@@ -95,9 +95,7 @@ io.on("connection", async (socket) => {
     const receiverSocketId = userSocketMap.get(receiverId);
 
     if (receiverSocketId) {
-      io.to(receiverSocketId).emit("call-cancelled", {
-        callerId: socket.handshake.query.userId,
-      });
+      io.to(receiverSocketId).emit("call-cancelled");
     }
   });
 
@@ -112,7 +110,8 @@ io.on("connection", async (socket) => {
 
   socket.on("reject-call", (data) => {
     const { callerId } = data;
-    io.to(callerId).emit("call-rejected");
+    const callerSocketId = userSocketMap.get(callerId);
+    io.to(callerSocketId).emit("call-rejected");
   });
 
   socket.on("end-call", (data) => {
@@ -122,6 +121,7 @@ io.on("connection", async (socket) => {
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("call-ended");
     }
+    console.log("call ended", data);
   });
 
   // WebRTC signaling

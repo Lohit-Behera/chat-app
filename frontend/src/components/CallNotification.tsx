@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "./ui/button";
 import { Phone, PhoneOff } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface CallNotificationProps {
   socket: Socket;
@@ -50,11 +51,10 @@ const CallNotification = ({
           </DialogDescription>
         </DialogHeader>
         <div className="flex justify-center">
-          <img
-            src={caller.avatar}
-            alt={caller.username}
-            className="w-20 h-20 rounded-full"
-          />
+          <Avatar className="w-20 h-20">
+            <AvatarImage src={caller.avatar} />
+            <AvatarFallback>CN</AvatarFallback>
+          </Avatar>
         </div>
         <DialogFooter className="flex justify-center gap-4">
           <Button

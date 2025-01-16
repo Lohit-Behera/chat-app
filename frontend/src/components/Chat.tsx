@@ -31,7 +31,6 @@ function Chat({ socket, receiverId }: ChatProps) {
   const [isInCall, setIsInCall] = useState(false);
   const [incomingCall, setIncomingCall] = useState<any>(null);
   const [isCalling, setIsCalling] = useState(false);
-  const [callType, setCallType] = useState<"audio" | "video" | null>(null);
   const [isCallInitiator, setIsCallInitiator] = useState(false);
 
   const userDetails = useSelector(
@@ -255,6 +254,15 @@ function Chat({ socket, receiverId }: ChatProps) {
       socket.off("call-ended");
     };
   }, [socket]);
+
+  useEffect(() => {
+    if (!socket) return;
+    if (incomingCall) {
+      socket.on("call-cancelled", () => {
+        setIncomingCall(null);
+      });
+    }
+  });
 
   return (
     <div className="flex flex-col">

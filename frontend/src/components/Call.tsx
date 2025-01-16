@@ -165,9 +165,9 @@ const Call = ({
 
   return (
     <div className="fixed inset-0 bg-background/95 flex flex-col items-center justify-center z-50">
-      <div className="relative w-full max-w-4xl aspect-video grid grid-cols-4 gap-4 p-4">
+      <div className="relative w-full max-w-4xl aspect-video p-4">
         {/* Remote Video (Large) */}
-        <div className="col-span-3 bg-muted rounded-lg overflow-hidden">
+        <div className="w-full bg-muted rounded-lg overflow-hidden">
           <video
             ref={remoteVideoRef}
             autoPlay
@@ -177,13 +177,13 @@ const Call = ({
         </div>
 
         {/* Local Video (Small) */}
-        <div className="col-span-1 bg-muted rounded-lg overflow-hidden">
+        <div className="absolute bottom-6 right-6 border-2 bg-muted rounded-lg overflow-hidden">
           <video
             ref={localVideoRef}
             autoPlay
             playsInline
             muted
-            className="w-full h-full object-cover"
+            className="w-40 h-40 object-cover"
           />
         </div>
       </div>
