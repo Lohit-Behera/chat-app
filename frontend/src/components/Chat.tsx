@@ -5,13 +5,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { Send } from "lucide-react";
+import { Phone, Send, Video } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Socket } from "socket.io-client";
 import { fetchReceiverDetails } from "@/features/userSlice";
 import { fetchGetMessages } from "@/features/messageSlice";
 import { debounce } from "@/lib/debounce";
 import MessageLoading from "./message-loading";
+import moment from "moment";
+import CallDialog from "./CallDialog";
+import { toast } from "sonner";
 
 interface ChatProps {
   socket: Socket;
@@ -24,6 +27,7 @@ function Chat({ socket, receiverId }: ChatProps) {
   const [message, setMessage] = useState("");
   const [allMessage, setAllMessage] = useState<any[]>([]);
   const [typingUser, setTypingUser] = useState<string | null>(null);
+  const [openDialog, setOpenDialog] = useState(false);
 
   const userDetails = useSelector(
     (state: RootState) => state.user.userDetails.data
@@ -142,29 +146,87 @@ function Chat({ socket, receiverId }: ChatProps) {
     };
   }, [socket, userDetails._id, typingUser]);
 
+  useEffect(() => {
+    socket.on("call_rejected", (data) => {
+      setOpenDialog(false);
+      toast.error(`Call Rejected by ${data.name}`);
+    });
+    socket.on("call_accepted", (data) => {
+      setOpenDialog(false);
+      toast.success(`Call Accepted by ${data.name}`);
+    });
+    socket.on("call_failed", () => {
+      setOpenDialog(false);
+      toast.error(`${receiverDetails.username} is offline`);
+    });
+
+    return () => {
+      socket.off("call_rejected");
+      socket.off("call_accepted");
+      socket.off("call_failed");
+    };
+  }, [socket]);
+
+  const handelStartCall = () => {
+    setOpenDialog(true);
+    socket.emit("start_call", {
+      callingTo: receiverDetails._id,
+      callingFrom: userDetails._id,
+      name: userDetails.username,
+      avatar: userDetails.avatar,
+    });
+  };
+
+  const handleCallCancel = () => {
+    setOpenDialog(false);
+    socket.emit("call_cancel", {
+      callingTo: receiverDetails._id,
+      name: userDetails.username,
+    });
+  };
+
   return (
     <div className="flex flex-col">
       {receiverId ? (
         <>
-          <header className="bg-muted/50 p-2 rounded-t-md flex space-x-1">
-            <div className="w-12 h-12 relative">
-              <span
-                className={`absolute bottom-0 right-0 w-3 h-3 ${
-                  receiverDetails.online ? "bg-green-500" : "bg-red-500"
-                } border-2 border-white rounded-full z-10`}
-              ></span>
-              <Avatar className="w-12 h-12">
-                <AvatarImage src={receiverDetails.avatar} />
-                <AvatarFallback>CN</AvatarFallback>
-              </Avatar>
+          <header className="bg-muted/50 p-2 rounded-t-md flex justify-between space-x-1">
+            <div className="flex space-x-1">
+              <div className="w-12 h-12 relative">
+                <span
+                  className={`absolute bottom-0 right-0 w-3 h-3 ${
+                    receiverDetails.online ? "bg-green-500" : "bg-red-500"
+                  } border-2 border-white rounded-full z-10`}
+                ></span>
+                <Avatar className="w-12 h-12">
+                  <AvatarImage src={receiverDetails.avatar} />
+                  <AvatarFallback>CN</AvatarFallback>
+                </Avatar>
+              </div>
+              <div className="flex flex-col">
+                <p>{receiverDetails.username}</p>
+                <p className="text-xs text-muted-foreground">
+                  {receiverDetails.online ? "Online" : "Offline"}
+                </p>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <p>{receiverDetails.username}</p>
-              <p className="text-xs text-muted-foreground">
-                {receiverDetails.online ? "Online" : "Offline"}
-              </p>
-            </div>
+            <Button
+              className="my-auto"
+              variant="outline"
+              onClick={handelStartCall}
+              disabled={!receiverDetails.online}
+            >
+              <Video />
+            </Button>
           </header>
+          <CallDialog
+            callingTo={{
+              id: receiverDetails._id,
+              username: receiverDetails.username,
+              avatar: receiverDetails.avatar,
+            }}
+            openDialog={openDialog}
+            handleCallCancel={handleCallCancel}
+          />
           <div className="relative flex flex-col space-y-2">
             <ScrollArea className="h-[70vh]" ref={messagesContainerRef}>
               <div className="w-[98%] h-full flex flex-col space-y-2 mb-2">
@@ -207,7 +269,7 @@ function Chat({ socket, receiverId }: ChatProps) {
                             "text-muted-foreground"
                           } text-right`}
                         >
-                          {item.time}
+                          {moment(item.timestamp).fromNow()}
                         </p>
                       </div>
                     </motion.div>

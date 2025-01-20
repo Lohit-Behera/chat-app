@@ -5,6 +5,7 @@ import { fetchGetAllUser } from "@/features/userSlice";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Chat from "@/components/Chat";
 import { io, Socket } from "socket.io-client";
+import IncomingCallDialog from "@/components/IncomingCallDialog";
 
 function HomePage() {
   const dispatch = useDispatch<AppDispatch>();
@@ -56,9 +57,9 @@ function HomePage() {
       socket.off("status_update");
     };
   }, [socket, dispatch]);
-
   return (
     <div className="flex space-x-4 p-4 rounded-lg border w-[95%] min-h-[80vh]">
+      {socket && <IncomingCallDialog socket={socket} />}
       <div className="flex flex-col gap-4 w-1/5 p-2 rounded-md border ">
         {getAllUser.map((item) => (
           <div

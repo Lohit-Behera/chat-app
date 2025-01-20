@@ -71,6 +71,32 @@ io.on("connection", async (socket) => {
     socket.to(roomId).emit("stopped_typing", userId);
   });
 
+  socket.on("start_call", (data) => {
+    const callingToSocketId = userSocketMap.get(data.callingTo);
+    const callingFromSocketId = userSocketMap.get(data.callingFrom);
+    if (callingToSocketId) {
+      socket.to(callingToSocketId).emit("incoming_call", data);
+    } else {
+      socket.to(callingFromSocketId).emit("call_failed");
+    }
+  });
+
+  socket.on("call_cancel", (data) => {
+    const callingToSocketId = userSocketMap.get(data.callingTo);
+    socket.to(callingToSocketId).emit("call_canceled", { name: data.name });
+  });
+
+  socket.on("call_reject", (data) => {
+    const callingFromSocketId = userSocketMap.get(data.callingFrom);
+    console.log(data);
+    socket.to(callingFromSocketId).emit("call_rejected", { name: data.name });
+  });
+
+  socket.on("call_accept", (data) => {
+    const callingFromSocketId = userSocketMap.get(data.callingFrom);
+    socket.to(callingFromSocketId).emit("call_accepted", { name: data.name });
+  });
+
   // Handle user disconnection
   socket.on("disconnect", async () => {
     console.log(`User disconnected: ${socket.id}`);
